@@ -3,11 +3,12 @@
 macOS screensaver with two ggplot2-styled scenes.
 
 - **Shape fall.** The 26 `pch` shapes fall into the panel, pile up and drain through the floor. Physics: SpriteKit, one body per shape outline.
+
+  <img src="media/shapefall.png" width="49%" alt="Shape fall with theme_grey() and hue_pal() colours"> <img src="media/shapefall-classic.png" width="49%" alt="Shape fall with theme_classic() and black shapes">
+
 - **Lava lamp.** `geom_density_2d_filled()` of moving Gaussian blobs, drawn by a shader. The lowest band is transparent.
 
-![Shape fall with theme_grey() and hue_pal() colours](media/shapefall.png)
-
-![Lava lamp with the magma palette](media/lavalamp.png)
+  <img src="media/lavalamp.png" width="49%" alt="Lava lamp with the magma palette"> <img src="media/lavalamp-mako.png" width="49%" alt="Lava lamp with the mako palette">
 
 ## Options
 
