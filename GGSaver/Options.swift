@@ -2,23 +2,12 @@ import AppKit
 import ScreenSaver
 
 enum SaverScene: String, CaseIterable {
-    case shapeFall, warningRain
+    case shapeFall, lavaLamp
 
     var title: String {
         switch self {
         case .shapeFall: return "Shape fall"
-        case .warningRain: return "Warning rain"
-        }
-    }
-}
-
-enum RainText: String, CaseIterable {
-    case functions, warnings
-
-    var title: String {
-        switch self {
-        case .functions: return "Functions"
-        case .warnings: return "Warnings and errors"
+        case .lavaLamp: return "Lava lamp"
         }
     }
 }
@@ -30,6 +19,23 @@ enum ShapeColour: String, CaseIterable {
         switch self {
         case .ink: return "Default"
         case .palette: return "Random from hue_pal()"
+        }
+    }
+}
+
+/// viridisLite::viridis(8, option = …), one colour per density band.
+enum LavaPalette: String, CaseIterable {
+    case viridis, magma, plasma, mako, turbo
+
+    var title: String { rawValue }
+
+    var colours: [UInt32] {
+        switch self {
+        case .viridis: return [0x440154, 0x46337E, 0x365C8D, 0x277F8E, 0x1FA187, 0x4AC16D, 0x9FDA3A, 0xFDE725]
+        case .magma: return [0x000004, 0x231151, 0x5F187F, 0x982D80, 0xD3436E, 0xF8765C, 0xFEBA80, 0xFCFDBF]
+        case .plasma: return [0x0D0887, 0x5402A3, 0x8B0AA5, 0xB93289, 0xDB5C68, 0xF48849, 0xFEBC2A, 0xF0F921]
+        case .mako: return [0x0B0405, 0x2E1E3C, 0x413D7B, 0x37659E, 0x348FA7, 0x40B7AD, 0x8AD9B1, 0xDEF5E5]
+        case .turbo: return [0x30123B, 0x4777EF, 0x1BD0D5, 0x62FC6B, 0xD2E935, 0xFE9B2D, 0xDB3A07, 0x7A0403]
         }
     }
 }
@@ -46,8 +52,7 @@ struct Options {
     var theme = GGTheme.grey
     var shapeColour = ShapeColour.palette
     var fillTime = FillTime.s30
-    var rainText = RainText.functions
-    var rainColour = ShapeColour.palette
+    var lavaPalette = LavaPalette.viridis
 
     private static var defaults: ScreenSaverDefaults? {
         let id = Bundle(for: GGSaverView.self).bundleIdentifier ?? "com.gkaramanis.ggsaver"
@@ -60,12 +65,10 @@ struct Options {
         if let s = d.string(forKey: "scene"), let scene = SaverScene(rawValue: s) { options.scene = scene }
         if let s = d.string(forKey: "theme"), let theme = GGTheme(rawValue: s) { options.theme = theme }
 
-        // "colour" is the single setting both scenes shared before it was split.
-        let shared = d.string(forKey: "colour").flatMap(ShapeColour.init)
-        options.shapeColour = d.string(forKey: "shapeColour").flatMap(ShapeColour.init) ?? shared ?? options.shapeColour
-        options.rainColour = d.string(forKey: "rainColour").flatMap(ShapeColour.init) ?? shared ?? options.rainColour
+        // "colour" is the setting Shape fall used before it had its own key.
+        options.shapeColour = (d.string(forKey: "shapeColour") ?? d.string(forKey: "colour")).flatMap(ShapeColour.init) ?? options.shapeColour
         if let time = FillTime(rawValue: d.integer(forKey: "fillTime")) { options.fillTime = time }
-        if let s = d.string(forKey: "rainText"), let text = RainText(rawValue: s) { options.rainText = text }
+        if let s = d.string(forKey: "lavaPalette"), let palette = LavaPalette(rawValue: s) { options.lavaPalette = palette }
         return options
     }
 
@@ -75,14 +78,13 @@ struct Options {
         d.set(theme.rawValue, forKey: "theme")
         d.set(shapeColour.rawValue, forKey: "shapeColour")
         d.set(fillTime.rawValue, forKey: "fillTime")
-        d.set(rainText.rawValue, forKey: "rainText")
-        d.set(rainColour.rawValue, forKey: "rainColour")
+        d.set(lavaPalette.rawValue, forKey: "lavaPalette")
         d.synchronize()
     }
 }
 
-/// The Options sheet, built in code so the bundle needs no nib. Scene and
-/// Scene is on top; below it only the selected scene's options show.
+/// The Options sheet, built in code so the bundle needs no nib. Scene is
+/// on top; below it only the selected scene's options show.
 @MainActor
 final class OptionsSheet: NSObject {
     let window: NSWindow
@@ -92,8 +94,7 @@ final class OptionsSheet: NSObject {
     private let themePopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let shapeColourPopup = NSPopUpButton(frame: .zero, pullsDown: false)
     private let timePopup = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let rainTextPopup = NSPopUpButton(frame: .zero, pullsDown: false)
-    private let rainColourPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let palettePopup = NSPopUpButton(frame: .zero, pullsDown: false)
 
     private var sections: [SaverScene: [NSView]] = [:]
 
@@ -110,8 +111,7 @@ final class OptionsSheet: NSObject {
         themePopup.addItems(withTitles: GGTheme.allCases.map(\.title))
         shapeColourPopup.addItems(withTitles: ShapeColour.allCases.map(\.title))
         timePopup.addItems(withTitles: FillTime.allCases.map(\.title))
-        rainTextPopup.addItems(withTitles: RainText.allCases.map(\.title))
-        rainColourPopup.addItems(withTitles: ShapeColour.allCases.map(\.title))
+        palettePopup.addItems(withTitles: LavaPalette.allCases.map(\.title))
 
         // Rows are laid out top-down; y is the top edge of the next row.
         var y = Self.height - 20
@@ -152,9 +152,9 @@ final class OptionsSheet: NSObject {
             + row("Colour:", shapeColourPopup)
             + row("Fill time:", timePopup)
         y = top
-        sections[.warningRain] = header(SaverScene.warningRain.title)
-            + row("Text:", rainTextPopup)
-            + row("Colour:", rainColourPopup)
+        y = top
+        sections[.lavaLamp] = header(SaverScene.lavaLamp.title)
+            + row("Palette:", palettePopup)
 
         let ok = NSButton(title: "OK", target: self, action: #selector(save))
         ok.keyEquivalent = "\r"
@@ -171,8 +171,7 @@ final class OptionsSheet: NSObject {
         themePopup.selectItem(at: GGTheme.allCases.firstIndex(of: options.theme) ?? 0)
         shapeColourPopup.selectItem(at: ShapeColour.allCases.firstIndex(of: options.shapeColour) ?? 0)
         timePopup.selectItem(at: FillTime.allCases.firstIndex(of: options.fillTime) ?? 0)
-        rainTextPopup.selectItem(at: RainText.allCases.firstIndex(of: options.rainText) ?? 0)
-        rainColourPopup.selectItem(at: ShapeColour.allCases.firstIndex(of: options.rainColour) ?? 0)
+        palettePopup.selectItem(at: LavaPalette.allCases.firstIndex(of: options.lavaPalette) ?? 0)
         sceneChanged()
     }
 
@@ -189,8 +188,7 @@ final class OptionsSheet: NSObject {
         options.theme = GGTheme.allCases[max(0, themePopup.indexOfSelectedItem)]
         options.shapeColour = ShapeColour.allCases[max(0, shapeColourPopup.indexOfSelectedItem)]
         options.fillTime = FillTime.allCases[max(0, timePopup.indexOfSelectedItem)]
-        options.rainText = RainText.allCases[max(0, rainTextPopup.indexOfSelectedItem)]
-        options.rainColour = ShapeColour.allCases[max(0, rainColourPopup.indexOfSelectedItem)]
+        options.lavaPalette = LavaPalette.allCases[max(0, palettePopup.indexOfSelectedItem)]
         options.save()
         onSave?(options)
         close()

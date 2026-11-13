@@ -84,7 +84,7 @@ final class GGSaverView: ScreenSaverView {
         let scene: GGScene
         switch options.scene {
         case .shapeFall: scene = ShapeFallScene(aspect: aspect, options: options, pixelsPerPoint: pixels)
-        case .warningRain: scene = WarningRainScene(aspect: aspect, options: options, pixelsPerPoint: pixels)
+        case .lavaLamp: scene = LavaLampScene(aspect: aspect, options: options, pixelsPerPoint: pixels)
         }
         skView.presentScene(scene)
     }

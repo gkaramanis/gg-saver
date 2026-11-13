@@ -20,8 +20,6 @@ done
 
 lipo -create build/obj/$NAME-* -output "$OUT/Contents/MacOS/$NAME"
 cp GGSaver/Info.plist "$OUT/Contents/Info.plist"
-mkdir -p "$OUT/Contents/Resources"
-cp GGSaver/Resources/* "$OUT/Contents/Resources/"
 codesign --force --sign - "$OUT"
 echo "Built $OUT"
 

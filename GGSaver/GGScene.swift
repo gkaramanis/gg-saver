@@ -23,12 +23,19 @@ class GGScene: SKScene {
         anchorPoint = .zero
         backgroundColor = .black
         addChild(panel())
+        addChild(edges())
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     /// The panel the scene draws on.
     var theme: GGTheme { options.theme }
+
+    /// White plot margin around the panel, in points.
+    var plotMargin: CGFloat { 0 }
+
+    /// Where the panel sits in the scene.
+    var panelRect: CGRect { CGRect(origin: .zero, size: size).insetBy(dx: plotMargin, dy: plotMargin) }
 
     /// Seconds since the previous frame, capped so a stall doesn't jump ahead.
     func step(_ currentTime: TimeInterval) -> TimeInterval {
@@ -50,12 +57,35 @@ class GGScene: SKScene {
     }
 
     private func panel() -> SKSpriteNode {
-        let image = render(size) { ctx in
-            theme.drawPanel(ctx, size: size, pixel: 1 / pixels)
+        let inner = panelRect
+        return sprite(z: -1) { ctx in
+            ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+            ctx.fill(CGRect(origin: .zero, size: size))
+            ctx.translateBy(x: inner.minX, y: inner.minY)
+            theme.drawPanel(ctx, size: inner.size, pixel: 1 / pixels)
         }
-        let node = SKSpriteNode(texture: SKTexture(cgImage: image), size: size)
+    }
+
+    /// The plot margin and the panel's edges, drawn over the scene so shapes
+    /// that cross the panel's edge are clipped by it.
+    private func edges() -> SKSpriteNode {
+        let inner = panelRect
+        return sprite(z: 10) { ctx in
+            if plotMargin > 0 {
+                ctx.addRect(CGRect(origin: .zero, size: size))
+                ctx.addRect(inner)
+                ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+                ctx.fillPath(using: .evenOdd)
+            }
+            ctx.translateBy(x: inner.minX, y: inner.minY)
+            theme.drawEdges(ctx, size: inner.size)
+        }
+    }
+
+    private func sprite(z: CGFloat, draw: (CGContext) -> Void) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: SKTexture(cgImage: render(size, draw: draw)), size: size)
         node.anchorPoint = .zero
-        node.zPosition = -1
+        node.zPosition = z
         return node
     }
 }

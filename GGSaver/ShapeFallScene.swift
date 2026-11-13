@@ -52,6 +52,8 @@ final class ShapeFallScene: GGScene {
         addWalls()
     }
 
+    override var plotMargin: CGFloat { GGScene.height * 0.04 }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     // MARK: Cycle
@@ -68,7 +70,7 @@ final class ShapeFallScene: GGScene {
                 spawnClock -= spawnEvery
                 spawn()
             }
-            if pileHeight() > size.height * Tune.fillTo || shapes.count >= maxShapes || clock > maxFill {
+            if pileHeight() > panelRect.minY + panelRect.height * Tune.fillTo || shapes.count >= maxShapes || clock > maxFill {
                 begin(.hold)
             }
         case .hold:
@@ -114,7 +116,7 @@ final class ShapeFallScene: GGScene {
 
     /// Height of the settled pile: the highest shape that has been still a while.
     private func pileHeight() -> CGFloat {
-        var top: CGFloat = 0
+        var top = panelRect.minY
         for node in shapes where node.rest > Tune.restAfter {
             top = max(top, node.position.y + r)
         }
@@ -134,7 +136,7 @@ final class ShapeFallScene: GGScene {
         let colour: Int? = options.shapeColour == .palette ? Int.random(in: 0..<Palette.hue.count) : nil
         let side = 2 * Glyph.extent * unit
         let node = ShapeNode(texture: texture(pch: pch, colour: colour), size: CGSize(width: side, height: side))
-        node.position = CGPoint(x: CGFloat.random(in: r...(size.width - r)),
+        node.position = CGPoint(x: CGFloat.random(in: (panelRect.minX + r)...(panelRect.maxX - r)),
                                 y: size.height + r * CGFloat.random(in: 1.5...4))
         node.zRotation = CGFloat.random(in: 0..<(2 * .pi))
 
@@ -169,7 +171,7 @@ final class ShapeFallScene: GGScene {
 
     private func addWalls() {
         let top = size.height + 12 * r
-        for x in [0, size.width] {
+        for x in [panelRect.minX, panelRect.maxX] {
             let wall = SKNode()
             let body = SKPhysicsBody(edgeFrom: CGPoint(x: x, y: -10 * r), to: CGPoint(x: x, y: top))
             body.friction = 0.5
@@ -181,7 +183,7 @@ final class ShapeFallScene: GGScene {
     }
 
     private func floorBody() -> SKPhysicsBody {
-        let body = SKPhysicsBody(edgeFrom: .zero, to: CGPoint(x: size.width, y: 0))
+        let body = SKPhysicsBody(edgeFrom: CGPoint(x: 0, y: panelRect.minY), to: CGPoint(x: size.width, y: panelRect.minY))
         body.friction = 0.6
         return body
     }

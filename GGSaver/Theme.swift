@@ -11,9 +11,6 @@ enum Palette {
     /// ggplot2's default ink, used for points in every complete theme.
     static let ink = hex(0x000000)
 
-    /// R's darkgreen and darkred, the default text colours of Warning rain.
-    static let darkGreen = hex(0x006400)
-    static let darkRed = hex(0x8B0000)
 
     /// scales::hue_pal()(26)
     static let hue: [CGColor] = ([
@@ -23,46 +20,37 @@ enum Palette {
     ] as [UInt32]).map(hex)
 }
 
-/// The panel of each ggplot2 complete theme. Line widths are relative to the
+/// The panel of the ggplot2 complete themes Shape fall offers. Line widths are relative to the
 /// base line size, as in the theme definitions.
 enum GGTheme: String, CaseIterable {
-    case grey, bw, linedraw, light, dark, minimal, classic, void
+    case grey, bw, classic
 
     var title: String { "theme_\(rawValue)()" }
 
     private var paper: CGColor {
-        switch self {
-        case .grey: return hex(0xEBEBEB)
-        case .dark: return hex(0x7F7F7F)
-        default: return hex(0xFFFFFF)
-        }
+        self == .grey ? hex(0xEBEBEB) : hex(0xFFFFFF)
     }
 
     /// Grid colour with major and minor widths.
     private var grid: (colour: CGColor, major: CGFloat, minor: CGFloat)? {
         switch self {
         case .grey: return (hex(0xFFFFFF), 1, 0.5)
-        case .bw, .minimal: return (hex(0xEBEBEB), 1, 0.5)
-        case .linedraw: return (hex(0x000000), 0.1, 0.05)
-        case .light: return (hex(0xDEDEDE), 0.5, 0.25)
-        case .dark: return (hex(0x6B6B6B), 0.5, 0.25)
-        case .classic, .void: return nil
+        case .bw: return (hex(0xEBEBEB), 1, 0.5)
+        case .classic: return nil
         }
     }
 
     private var border: CGColor? {
-        switch self {
-        case .bw: return hex(0x333333)
-        case .linedraw: return hex(0x000000)
-        case .light: return hex(0xB3B3B3)
-        default: return nil
-        }
+        self == .bw ? hex(0x333333) : nil
     }
 
-    /// Draws the panel across `size`, in a context scaled to points.
-    /// `pixel` is one device pixel in points, the thinnest line drawn.
+    /// Line width that matches the base line size on a panel `height` tall.
+    static func base(_ height: CGFloat) -> CGFloat { height / 540 }
+
+    /// Draws the panel's background and grid across `size`, in a context
+    /// scaled to points. `pixel` is one device pixel in points, the thinnest line drawn.
     func drawPanel(_ ctx: CGContext, size: CGSize, pixel: CGFloat) {
-        let base = size.height / 540
+        let base = GGTheme.base(size.height)
         let rect = CGRect(origin: .zero, size: size)
         ctx.setFillColor(paper)
         ctx.fill(rect)
@@ -87,6 +75,13 @@ enum GGTheme: String, CaseIterable {
                 ctx.strokePath()
             }
         }
+    }
+
+    /// Draws what sits on top of the panel's contents: the border, or
+    /// theme_classic()'s axis lines.
+    func drawEdges(_ ctx: CGContext, size: CGSize) {
+        let base = GGTheme.base(size.height)
+        let rect = CGRect(origin: .zero, size: size)
 
         if let border {
             ctx.setStrokeColor(border)
