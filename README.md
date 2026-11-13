@@ -18,6 +18,15 @@ macOS screensaver with two ggplot2-styled scenes.
 - **Lava lamp**
   - Palette: viridis, magma, plasma, mako, turbo (`viridisLite::viridis(8, option = …)`).
 
+## Install
+
+Requires macOS 14+. Download from the [latest release](https://github.com/gkaramanis/gg-saver/releases/latest):
+
+- `gg.saver-<version>.pkg`: open it and follow the installer. Choose this Mac or only your account.
+- `gg.saver-<version>.zip`: unzip and double-click `gg.saver.saver`.
+
+Then choose gg.saver in System Settings → Screen Saver. Options are under the Options button there.
+
 ## Build
 
 Requires macOS 14+ and the Xcode command line tools.
