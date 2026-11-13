@@ -26,7 +26,7 @@ Requires macOS 14+. Download from the [latest release](https://github.com/gkaram
 - `gg.saver-<version>.pkg`: open it and follow the installer. Choose this Mac or only your account.
 - `gg.saver-<version>.zip`: unzip and double-click `gg.saver.saver`.
 
-Then choose gg.saver in System Settings → Screen Saver. Options are under the Options button there.
+Then select gg.saver under System Settings → Wallpaper → Screen Saver… → Custom (macOS 26 and later) or System Settings → Screen Saver (macOS 14 and 15). Options are under `Options…`.
 
 ## Build
 
